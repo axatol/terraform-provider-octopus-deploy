@@ -12,14 +12,14 @@ Setting up:
 # Build and install the provider
 go install
 
-# Find where go put the binary
+# Find where go put the provider binary
 GOBIN="$(go env GOPATH)/bin"
 
 # Add the override, replacing <path> with GOBIN
 cat <<EOF > $HOME/.terraformrc
 provider_installation {
   dev_overrides {
-    "registry.terraform.io/axatol/octopusdeploy" = "<path>"
+    "registry.terraform.io/axatol/octopusdeploy" = "${GOBIN}"
   }
 
   direct {}
