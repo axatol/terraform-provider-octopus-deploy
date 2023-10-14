@@ -14,40 +14,45 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Ensure ScaffoldingProvider satisfies various provider interfaces.
-var _ provider.Provider = &ScaffoldingProvider{}
+// Ensure OctopusDeployProvider satisfies various provider interfaces.
+var _ provider.Provider = &OctopusDeployProvider{}
 
-// ScaffoldingProvider defines the provider implementation.
-type ScaffoldingProvider struct {
+// OctopusDeployProvider defines the provider implementation.
+type OctopusDeployProvider struct {
 	// version is set to the provider version on release, "dev" when the
 	// provider is built and ran locally, and "test" when running acceptance
 	// testing.
 	version string
 }
 
-// ScaffoldingProviderModel describes the provider data model.
-type ScaffoldingProviderModel struct {
-	Endpoint types.String `tfsdk:"endpoint"`
+// OctopusDeployProviderModel describes the provider data model.
+type OctopusDeployProviderModel struct {
+	ServerURL types.String `tfsdk:"server_url"`
+	APIKey    types.String `tfsdk:"api_key"`
 }
 
-func (p *ScaffoldingProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "scaffolding"
+func (p *OctopusDeployProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
+	resp.TypeName = "octopusdeploy"
 	resp.Version = p.version
 }
 
-func (p *ScaffoldingProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
+func (p *OctopusDeployProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Example provider attribute",
-				Optional:            true,
+			"server_url": schema.StringAttribute{
+				Description: "The URL of the Octopus Deploy REST API",
+				Required:    true,
+			},
+			"api_key": schema.StringAttribute{
+				Description: "The API key to use with the Octopus Deploy REST API",
+				Required:    true,
 			},
 		},
 	}
 }
 
-func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
-	var data ScaffoldingProviderModel
+func (p *OctopusDeployProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
+	var data OctopusDeployProviderModel
 
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
@@ -55,31 +60,52 @@ func (p *ScaffoldingProvider) Configure(ctx context.Context, req provider.Config
 		return
 	}
 
-	// Configuration values are now available.
-	// if data.Endpoint.IsNull() { /* ... */ }
+	if data.ServerURL.IsNull() || data.ServerURL.ValueString() == "" {
+		resp.Diagnostics.AddError("Must provide a valid server URL", "Server URL was empty")
+		return
+	}
 
-	// Example client configuration for data sources and resources
-	client := http.DefaultClient
+	if data.APIKey.IsNull() || data.APIKey.ValueString() == "" {
+		resp.Diagnostics.AddError("Must provide a valid API key", "API key was empty")
+		return
+	}
+
+	client := newDataClient(data.APIKey.ValueString())
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }
 
-func (p *ScaffoldingProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{
-		NewExampleResource,
-	}
+func (p *OctopusDeployProvider) Resources(ctx context.Context) []func() resource.Resource {
+	return nil
 }
 
-func (p *ScaffoldingProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return []func() datasource.DataSource{
-		NewExampleDataSource,
-	}
+func (p *OctopusDeployProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
+	return nil
 }
 
 func New(version string) func() provider.Provider {
 	return func() provider.Provider {
-		return &ScaffoldingProvider{
+		return &OctopusDeployProvider{
 			version: version,
 		}
 	}
+}
+
+func newDataClient(apiKey string) *http.Client {
+	return &http.Client{Transport: &authRoundTripper{
+		transport: http.DefaultTransport,
+		apiKey:    apiKey,
+	}}
+}
+
+type authRoundTripper struct {
+	transport http.RoundTripper
+	apiKey    string
+}
+
+func (rt *authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Add("X-Octopus-ApiKey", rt.apiKey)
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("Content-Type", "application/json")
+	return rt.transport.RoundTrip(req)
 }
