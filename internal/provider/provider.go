@@ -5,17 +5,21 @@ package provider
 
 import (
 	"context"
-	"net/http"
+	"os"
 
+	"github.com/axatol/terraform-provider-octopusdeploy/internal/api"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure OctopusDeployProvider satisfies various provider interfaces.
-var _ provider.Provider = &OctopusDeployProvider{}
+var (
+	_ provider.Provider = (*OctopusDeployProvider)(nil)
+)
 
 // OctopusDeployProvider defines the provider implementation.
 type OctopusDeployProvider struct {
@@ -27,6 +31,7 @@ type OctopusDeployProvider struct {
 
 // OctopusDeployProviderModel describes the provider data model.
 type OctopusDeployProviderModel struct {
+	SpaceID   types.String `tfsdk:"space_id"`
 	ServerURL types.String `tfsdk:"server_url"`
 	APIKey    types.String `tfsdk:"api_key"`
 }
@@ -39,13 +44,18 @@ func (p *OctopusDeployProvider) Metadata(ctx context.Context, req provider.Metad
 func (p *OctopusDeployProvider) Schema(ctx context.Context, req provider.SchemaRequest, resp *provider.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "The default space ID. Can be set with the environment variable `OCTOPUSDEPLOY_SPACE_ID`",
+				Optional:            true,
+			},
 			"server_url": schema.StringAttribute{
-				Description: "The URL of the Octopus Deploy REST API",
-				Required:    true,
+				MarkdownDescription: "The URL of the Octopus Deploy REST API. Can be set with the environment variable `OCTOPUSDEPLOY_SERVER_URL`",
+				Optional:            true,
 			},
 			"api_key": schema.StringAttribute{
-				Description: "The API key to use with the Octopus Deploy REST API",
-				Required:    true,
+				MarkdownDescription: "The API key to use with the Octopus Deploy REST API. Can be set with the environment variable `OCTOPUSDEPLOY_API_KEY`",
+				Optional:            true,
+				Sensitive:           true,
 			},
 		},
 	}
@@ -53,34 +63,84 @@ func (p *OctopusDeployProvider) Schema(ctx context.Context, req provider.SchemaR
 
 func (p *OctopusDeployProvider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var data OctopusDeployProviderModel
-
 	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
 
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if data.ServerURL.IsNull() || data.ServerURL.ValueString() == "" {
-		resp.Diagnostics.AddError("Must provide a valid server URL", "Server URL was empty")
+	if data.SpaceID.IsUnknown() {
+		resp.Diagnostics.Append(ErrUnknownProviderAttribute("space_id", "OCTOPUSDEPLOY_SPACE_ID"))
+	}
+
+	if data.ServerURL.IsUnknown() {
+		resp.Diagnostics.Append(ErrUnknownProviderAttribute("server_url", "OCTOPUSDEPLOY_SERVER_URL"))
+	}
+
+	if data.APIKey.IsUnknown() {
+		resp.Diagnostics.Append(ErrUnknownProviderAttribute("api_key", "OCTOPUSDEPLOY_API_KEY"))
+	}
+
+	spaceID := os.Getenv("OCTOPUSDEPLOY_SPACE_ID")
+	serverURL := os.Getenv("OCTOPUSDEPLOY_SERVER_URL")
+	apiKey := os.Getenv("OCTOPUSDEPLOY_API_KEY")
+	ctx = tflog.SetField(ctx, "space_id", spaceID)
+	ctx = tflog.SetField(ctx, "server_url", serverURL)
+	ctx = tflog.SetField(ctx, "api_key", apiKey)
+	ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "api_key")
+	tflog.Info(ctx, "Retrieved provider data from environment variables")
+
+	if !data.SpaceID.IsNull() {
+		spaceID = data.SpaceID.ValueString()
+	}
+
+	if !data.ServerURL.IsNull() {
+		serverURL = data.ServerURL.ValueString()
+	}
+
+	if !data.APIKey.IsNull() {
+		apiKey = data.APIKey.ValueString()
+	}
+
+	if spaceID == "" {
+		resp.Diagnostics.Append(ErrMissingProviderAttribute("space_url", "OCTOPUSDEPLOY_SPACE_ID"))
+	}
+
+	if serverURL == "" {
+		resp.Diagnostics.Append(ErrMissingProviderAttribute("server_url", "OCTOPUSDEPLOY_SERVER_URL"))
+	}
+
+	if apiKey == "" {
+		resp.Diagnostics.Append(ErrMissingProviderAttribute("api_key", "OCTOPUSDEPLOY_API_KEY"))
+	}
+
+	ctx = tflog.SetField(ctx, "space_id", spaceID)
+	ctx = tflog.SetField(ctx, "server_url", serverURL)
+	ctx = tflog.SetField(ctx, "api_key", apiKey)
+	tflog.Info(ctx, "Provider configuration resolved")
+
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if data.APIKey.IsNull() || data.APIKey.ValueString() == "" {
-		resp.Diagnostics.AddError("Must provide a valid API key", "API key was empty")
+	client, err := api.NewClient(serverURL, apiKey, spaceID)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to create Octopus Deploy API client", err.Error())
 		return
 	}
 
-	client := newDataClient(data.APIKey.ValueString())
 	resp.DataSourceData = client
 	resp.ResourceData = client
 }
 
 func (p *OctopusDeployProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return nil
+	return []func() resource.Resource{}
 }
 
 func (p *OctopusDeployProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
-	return nil
+	return []func() datasource.DataSource{
+		NewProjectDataSource,
+	}
 }
 
 func New(version string) func() provider.Provider {
@@ -89,23 +149,4 @@ func New(version string) func() provider.Provider {
 			version: version,
 		}
 	}
-}
-
-func newDataClient(apiKey string) *http.Client {
-	return &http.Client{Transport: &authRoundTripper{
-		transport: http.DefaultTransport,
-		apiKey:    apiKey,
-	}}
-}
-
-type authRoundTripper struct {
-	transport http.RoundTripper
-	apiKey    string
-}
-
-func (rt *authRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	req.Header.Add("X-Octopus-ApiKey", rt.apiKey)
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	return rt.transport.RoundTrip(req)
 }
