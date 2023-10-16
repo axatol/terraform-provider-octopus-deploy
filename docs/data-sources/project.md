@@ -14,11 +14,11 @@ description: |-
 
 ```terraform
 data "octopusdeploy_project" "petclinic" {
-  project_name = "PetClinic"
+  name = "PetClinic"
 }
 
 data "octopusdeploy_project" "octopus_deploy" {
-  project_id = "Projects-1241"
+  id = "Projects-1241"
 }
 ```
 
@@ -27,14 +27,9 @@ data "octopusdeploy_project" "octopus_deploy" {
 
 ### Optional
 
-- `project_id` (String)
-- `project_name` (String)
+- `id` (String) ID of the project
+- `name` (String) The name of the project in Octopus Deploy. This name must be unique
 
 ### Read-Only
 
-- `deployment_process_id` (String)
-- `lifecycle_id` (String)
-- `project_group_id` (String)
-- `project_slug` (String)
-- `space_id` (String)
-- `variable_set_id` (String)
+- `slug` (String) A human-readable, unique identifier, used to identify a project

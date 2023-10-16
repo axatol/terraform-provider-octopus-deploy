@@ -30,8 +30,8 @@ type TenantDataSource struct {
 
 // TenantDataSourceModel describes the data source data model.
 type TenantDataSourceModel struct {
-	TenantID   types.String `tfsdk:"tenant_id"`
-	TenantName types.String `tfsdk:"tenant_name"`
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
 
 func (d *TenantDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, res *datasource.MetadataResponse) {
@@ -55,16 +55,24 @@ func (d *TenantDataSource) Configure(ctx context.Context, req datasource.Configu
 
 func (d *TenantDataSource) ConfigValidators(context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{datasourcevalidator.AtLeastOneOf(
-		path.MatchRoot("tenant_id"),
-		path.MatchRoot("tenant_name"),
+		path.MatchRoot("id"),
+		path.MatchRoot("name"),
 	)}
 }
 
 func (d *TenantDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, res *datasource.SchemaResponse) {
 	res.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"tenant_id":   schema.StringAttribute{Computed: true, Optional: true},
-			"tenant_name": schema.StringAttribute{Computed: true, Optional: true},
+			"id": schema.StringAttribute{
+				MarkdownDescription: "ID of the tenant",
+				Computed:            true,
+				Optional:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Name of the tenant",
+				Computed:            true,
+				Optional:            true,
+			},
 		},
 	}
 }
@@ -75,9 +83,9 @@ func (d *TenantDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
-	id := data.TenantID.ValueString()
+	id := data.ID.ValueString()
 	if id == "" {
-		id = data.TenantName.ValueString()
+		id = data.Name.ValueString()
 	}
 
 	if id == "" {
@@ -93,8 +101,8 @@ func (d *TenantDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 	}
 
 	model := TenantDataSourceModel{
-		TenantID:   types.StringValue(tenant.ID),
-		TenantName: types.StringValue(tenant.Name),
+		ID:   types.StringValue(tenant.ID),
+		Name: types.StringValue(tenant.Name),
 	}
 
 	if res.Diagnostics.Append(res.State.Set(ctx, &model)...); res.Diagnostics.HasError() {

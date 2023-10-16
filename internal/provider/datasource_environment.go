@@ -31,8 +31,8 @@ type EnvironmentDataSource struct {
 
 // EnvironmentDataSourceModel describes the data source data model.
 type EnvironmentDataSourceModel struct {
-	EnvironmentID   types.String `tfsdk:"environment_id"`
-	EnvironmentName types.String `tfsdk:"environment_name"`
+	ID   types.String `tfsdk:"id"`
+	Name types.String `tfsdk:"name"`
 }
 
 func (d *EnvironmentDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, res *datasource.MetadataResponse) {
@@ -56,16 +56,24 @@ func (d *EnvironmentDataSource) Configure(ctx context.Context, req datasource.Co
 
 func (d *EnvironmentDataSource) ConfigValidators(context.Context) []datasource.ConfigValidator {
 	return []datasource.ConfigValidator{datasourcevalidator.AtLeastOneOf(
-		path.MatchRoot("environment_id"),
-		path.MatchRoot("environment_name"),
+		path.MatchRoot("id"),
+		path.MatchRoot("name"),
 	)}
 }
 
 func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, res *datasource.SchemaResponse) {
 	res.Schema = schema.Schema{
 		Attributes: map[string]schema.Attribute{
-			"environment_id":   schema.StringAttribute{Computed: true, Optional: true},
-			"environment_name": schema.StringAttribute{Computed: true, Optional: true},
+			"id": schema.StringAttribute{
+				MarkdownDescription: "ID of the environment",
+				Computed:            true,
+				Optional:            true,
+			},
+			"name": schema.StringAttribute{
+				MarkdownDescription: "Name of the environment",
+				Computed:            true,
+				Optional:            true,
+			},
 		},
 	}
 }
@@ -81,8 +89,8 @@ func (d *EnvironmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 		err         error
 	)
 
-	id := data.EnvironmentID.ValueString()
-	name := data.EnvironmentName.ValueString()
+	id := data.ID.ValueString()
+	name := data.Name.ValueString()
 
 	if id != "" {
 		environment, err = d.client.Environments.GetByID(id)
@@ -104,8 +112,8 @@ func (d *EnvironmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 	}
 
 	model := EnvironmentDataSourceModel{
-		EnvironmentID:   types.StringValue(environment.ID),
-		EnvironmentName: types.StringValue(environment.Name),
+		ID:   types.StringValue(environment.ID),
+		Name: types.StringValue(environment.Name),
 	}
 
 	if res.Diagnostics.Append(res.State.Set(ctx, &model)...); res.Diagnostics.HasError() {
