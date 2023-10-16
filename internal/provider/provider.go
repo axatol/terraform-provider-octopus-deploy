@@ -5,9 +5,10 @@ package provider
 
 import (
 	"context"
+	"net/url"
 	"os"
 
-	"github.com/axatol/terraform-provider-octopusdeploy/internal/api"
+	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/client"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
