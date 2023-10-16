@@ -4,8 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/axatol/terraform-provider-octopusdeploy/internal/api"
-	"github.com/axatol/terraform-provider-octopusdeploy/internal/octopusdeploy"
+	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/client"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -26,7 +25,7 @@ func NewProjectDataSource() datasource.DataSource {
 
 // ProjectDataSource defines the data source implementation.
 type ProjectDataSource struct {
-	client *api.Client
+	client *client.Client
 }
 
 // ProjectDataSourceModel describes the data source data model.
@@ -51,9 +50,9 @@ func (d *ProjectDataSource) Configure(ctx context.Context, req datasource.Config
 		return
 	}
 
-	client, ok := req.ProviderData.(*api.Client)
+	client, ok := req.ProviderData.(*client.Client)
 	if !ok {
-		res.Diagnostics.Append(ErrUnexpectedDataConfigureType(req.ProviderData))
+		res.Diagnostics.Append(ErrUnexpectedDataSourceConfigureType(req.ProviderData))
 		return
 	}
 
@@ -88,24 +87,18 @@ func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
-	var (
-		id      string
-		project *octopusdeploy.Project
-		err     error
-	)
-
-	if id = data.ProjectID.ValueString(); id != "" {
-		project, err = d.client.GetProjectByID(ctx, id)
-	} else if id := data.ProjectName.ValueString(); id != "" {
-		project, err = d.client.GetProjectByName(ctx, id)
-	} else {
-		err = fmt.Errorf("did not provide a valid identifier")
+	id := data.ProjectID.ValueString()
+	if id == "" {
+		id = data.ProjectName.ValueString()
 	}
 
-	if project == nil {
-		err = fmt.Errorf("no matching project found")
+	if id == "" {
+		err := fmt.Errorf("did not provide a valid identifier")
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch project %s", id), err.Error())
+		return
 	}
 
+	project, err := d.client.Projects.GetByIdentifier(id)
 	if err != nil {
 		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch project %s", id), err.Error())
 		return

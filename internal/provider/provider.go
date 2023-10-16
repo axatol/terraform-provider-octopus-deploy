@@ -123,7 +123,13 @@ func (p *OctopusDeployProvider) Configure(ctx context.Context, req provider.Conf
 		return
 	}
 
-	client, err := api.NewClient(serverURL, apiKey, spaceID)
+	uri, err := url.Parse(serverURL)
+	if err != nil {
+		resp.Diagnostics.AddError("Failed to parse Octopus Deploy server URL", err.Error())
+		return
+	}
+
+	client, err := client.NewClient(nil, uri, apiKey, spaceID)
 	if err != nil {
 		resp.Diagnostics.AddError("Failed to create Octopus Deploy API client", err.Error())
 		return
@@ -139,7 +145,9 @@ func (p *OctopusDeployProvider) Resources(ctx context.Context) []func() resource
 
 func (p *OctopusDeployProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
+		NewEnvironmentDataSource,
 		NewProjectDataSource,
+		NewTenantDataSource,
 	}
 }
 

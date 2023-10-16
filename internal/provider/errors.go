@@ -40,9 +40,19 @@ func ErrMissingAttribute(attributeName string) diag.Diagnostic {
 	)
 }
 
-func ErrUnexpectedDataConfigureType(input any) diag.Diagnostic {
+func ErrUnexpectedDataSourceConfigureType(input any) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
-		"Unexpected Data Source Configure Type",
+		"Unexpected data source configure type",
+		fmt.Sprintf(
+			"Expected *api.Client, got: %T. Please report this issue to the provider developers.",
+			input,
+		),
+	)
+}
+
+func ErrUnexpectedResourceConfigureType(input any) diag.Diagnostic {
+	return diag.NewErrorDiagnostic(
+		"Unexpected resource configure type",
 		fmt.Sprintf(
 			"Expected *api.Client, got: %T. Please report this issue to the provider developers.",
 			input,
