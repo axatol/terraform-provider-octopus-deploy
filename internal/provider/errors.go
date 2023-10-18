@@ -2,7 +2,9 @@ package provider
 
 import (
 	"fmt"
+	"net/http"
 
+	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/core"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
@@ -58,4 +60,30 @@ func ErrUnexpectedResourceConfigureType(input any) diag.Diagnostic {
 			input,
 		),
 	)
+}
+
+func isAPIErrorNotFound(err error) bool {
+	if apiErr, ok := err.(*core.APIError); ok {
+		if apiErr.StatusCode == http.StatusNotFound {
+			return true
+		}
+	}
+
+	return false
+}
+
+func addedDiagnosticError(dst diag.Diagnostics, summary string, err error) bool {
+	if err != nil {
+		dst.AddError(summary, err.Error())
+	}
+
+	return dst.HasError()
+}
+
+func ErrAsDiagnostic(message string, err error) (diags []diag.Diagnostic) {
+	if err != nil {
+		diags = append(diags, diag.NewErrorDiagnostic(message, err.Error()))
+	}
+
+	return diags
 }

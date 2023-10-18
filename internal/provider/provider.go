@@ -141,7 +141,9 @@ func (p *OctopusDeployProvider) Configure(ctx context.Context, req provider.Conf
 }
 
 func (p *OctopusDeployProvider) Resources(ctx context.Context) []func() resource.Resource {
-	return []func() resource.Resource{}
+	return []func() resource.Resource{
+		NewTenantConnectionResource,
+	}
 }
 
 func (p *OctopusDeployProvider) DataSources(ctx context.Context) []func() datasource.DataSource {
