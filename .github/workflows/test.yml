@@ -18,7 +18,6 @@ permissions:
 jobs:
   # Ensure project builds before running testing matrix
   build:
-    name: Build
     runs-on: self-hosted
     timeout-minutes: 5
     steps:

@@ -72,14 +72,6 @@ func isAPIErrorNotFound(err error) bool {
 	return false
 }
 
-func addedDiagnosticError(dst diag.Diagnostics, summary string, err error) bool {
-	if err != nil {
-		dst.AddError(summary, err.Error())
-	}
-
-	return dst.HasError()
-}
-
 func ErrAsDiagnostic(message string, err error) (diags []diag.Diagnostic) {
 	if err != nil {
 		diags = append(diags, diag.NewErrorDiagnostic(message, err.Error()))
