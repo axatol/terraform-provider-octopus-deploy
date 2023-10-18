@@ -26,6 +26,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version-file: "go.mod"
+          cache: false
       - run: go mod download
       - run: go build -v .
       - name: Run linters
@@ -40,6 +41,7 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version-file: "go.mod"
+          cache: false
       - uses: hashicorp/setup-terraform@v2
         with:
           terraform_wrapper: false
@@ -70,6 +72,7 @@ jobs:
   #     - uses: actions/setup-go@v4
   #       with:
   #         go-version-file: "go.mod"
+  #         cache: false
   #     - uses: hashicorp/setup-terraform@v2
   #       with:
   #         terraform_version: ${{ matrix.terraform }}
