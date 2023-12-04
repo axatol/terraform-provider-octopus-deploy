@@ -8,7 +8,7 @@ import (
 	"flag"
 	"log"
 
-	"github.com/axatol/terraform-provider-octopusdeploy/internal/provider"
+	"github.com/axatol/terraform-provider-octopusdeploycontrib/internal/provider"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 )
 
@@ -38,7 +38,7 @@ func main() {
 	flag.Parse()
 
 	opts := providerserver.ServeOpts{
-		Address: "registry.terraform.io/axatol/octopusdeploy",
+		Address: "registry.terraform.io/axatol/octopusdeploycontrib",
 		Debug:   debug,
 	}
 

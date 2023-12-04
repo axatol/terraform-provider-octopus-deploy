@@ -38,7 +38,7 @@ type OctopusDeployProviderModel struct {
 }
 
 func (p *OctopusDeployProvider) Metadata(ctx context.Context, req provider.MetadataRequest, resp *provider.MetadataResponse) {
-	resp.TypeName = "octopusdeploy"
+	resp.TypeName = "octopusdeploycontrib"
 	resp.Version = p.version
 }
 

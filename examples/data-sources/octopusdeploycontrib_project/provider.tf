@@ -1,12 +1,12 @@
 terraform {
   required_providers {
-    octopusdeploy = {
-      source = "registry.terraform.io/axatol/octopusdeploy"
+    octopusdeploycontrib = {
+      source = "registry.terraform.io/axatol/octopusdeploycontrib"
     }
   }
 }
 
-provider "octopusdeploy" {
+provider "octopusdeploycontrib" {
   server_url = "https://samples.octopus.app"
   space_id   = "Spaces-105"
   api_key    = "API-GUEST"
