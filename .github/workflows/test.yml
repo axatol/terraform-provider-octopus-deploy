@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          show-progress: false
       - uses: actions/setup-go@v4
         with:
           go-version-file: "go.mod"
@@ -37,6 +39,8 @@ jobs:
     runs-on: self-hosted
     steps:
       - uses: actions/checkout@v4
+        with:
+          show-progress: false
       - uses: actions/setup-go@v4
         with:
           go-version-file: "go.mod"
@@ -68,6 +72,8 @@ jobs:
   #         - "1.4.*"
   #   steps:
   #     - uses: actions/checkout@v4
+  #       with:
+  #         show-progress: false
   #     - uses: actions/setup-go@v4
   #       with:
   #         go-version-file: "go.mod"

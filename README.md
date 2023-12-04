@@ -19,7 +19,7 @@ GOBIN="$(go env GOPATH)/bin"
 cat <<EOF > $HOME/.terraformrc
 provider_installation {
   dev_overrides {
-    "registry.terraform.io/axatol/octopusdeploy" = "${GOBIN}"
+    "registry.terraform.io/axatol/octopusdeploycontrib" = "${GOBIN}"
   }
 
   direct {}
@@ -32,19 +32,13 @@ At this point, you can use the provider like so:
 ```terraform
 terraform {
   required_providers {
-    octopusdeploy = {
-      source = "registry.terraform.io/axatol/octopusdeploy"
+    octopusdeploycontrib = {
+      source = "registry.terraform.io/axatol/octopusdeploycontrib"
     }
   }
 }
 
-provider "octopusdeploy" {}
+provider "octopusdeploycontrib" {}
 
-data "octopusdeploy_project" "test" {}
-```
-
-To regenerate API specs for Octopus Deploy
-
-```bash
-make genspec
+data "octopusdeploycontrib_project" "test" {}
 ```
