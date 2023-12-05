@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -88,6 +89,8 @@ func (d *TenantDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		id = data.Name.ValueString()
 	}
 
+	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": id})
+
 	if id == "" {
 		err := fmt.Errorf("did not provide a valid identifier")
 		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch tenant %s", id), err.Error())
@@ -99,6 +102,8 @@ func (d *TenantDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch tenant %s", id), err.Error())
 		return
 	}
+
+	tflog.Debug(ctx, "fetched tenant", map[string]interface{}{"tenant": tenant})
 
 	model := TenantDataSourceModel{
 		ID:   types.StringValue(tenant.ID),

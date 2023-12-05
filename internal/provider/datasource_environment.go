@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // Ensure provider defined types fully satisfy framework interfaces.
@@ -92,6 +93,8 @@ func (d *EnvironmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 	id := data.ID.ValueString()
 	name := data.Name.ValueString()
 
+	tflog.Debug(ctx, "fetching environment", map[string]interface{}{"id": id, "name": name})
+
 	if id != "" {
 		environment, err = d.client.Environments.GetByID(id)
 	} else if name != "" {
@@ -110,6 +113,8 @@ func (d *EnvironmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch environment %s", id), err.Error())
 		return
 	}
+
+	tflog.Debug(ctx, "fetched environment", map[string]interface{}{"environment": environment})
 
 	model := EnvironmentDataSourceModel{
 		ID:   types.StringValue(environment.ID),
