@@ -3,7 +3,7 @@ module github.com/axatol/terraform-provider-octopusdeploycontrib
 go 1.19
 
 require (
-	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.32.0
+	github.com/OctopusDeploy/go-octopusdeploy/v2 v2.35.0
 	github.com/hashicorp/terraform-plugin-docs v0.16.0
 	github.com/hashicorp/terraform-plugin-framework v1.4.1
 	github.com/hashicorp/terraform-plugin-framework-validators v0.12.0
