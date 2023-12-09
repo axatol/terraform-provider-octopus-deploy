@@ -64,6 +64,7 @@ func (d *EnvironmentDataSource) ConfigValidators(context.Context) []datasource.C
 
 func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, res *datasource.SchemaResponse) {
 	res.Schema = schema.Schema{
+		MarkdownDescription: "Use this data source to get the ID of an environment",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of the environment",

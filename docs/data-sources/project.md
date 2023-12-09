@@ -3,12 +3,12 @@
 page_title: "octopusdeploycontrib_project Data Source - terraform-provider-octopusdeploycontrib"
 subcategory: ""
 description: |-
-  
+  Use this data source to get the ID of a project
 ---
 
 # octopusdeploycontrib_project (Data Source)
 
-
+Use this data source to get the ID of a project
 
 ## Example Usage
 

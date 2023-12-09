@@ -45,6 +45,7 @@ func (r *ServiceAccountOIDCIdentityResource) Metadata(ctx context.Context, req r
 
 func (r *ServiceAccountOIDCIdentityResource) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
+		MarkdownDescription: "Use this resource to create and manage OIDC subject claims on a service account",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of the service account OIDC identity",
@@ -129,11 +130,12 @@ func (r *ServiceAccountOIDCIdentityResource) Read(ctx context.Context, req resou
 	})
 
 	identity, err := custom.NewClient(r.client).GetServiceAccountOIDCIdentity(serviceAccountID, identityID)
-	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get service account oidc identity", err)...); res.Diagnostics.HasError() {
-		if isAPIErrorNotFound(err) {
-			res.State.RemoveResource(ctx)
-		}
+	if isAPIErrorNotFound(err) {
+		res.State.RemoveResource(ctx)
+		return
+	}
 
+	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get service account oidc identity", err)...); res.Diagnostics.HasError() {
 		return
 	}
 
@@ -168,15 +170,15 @@ func (r *ServiceAccountOIDCIdentityResource) Update(ctx context.Context, req res
 
 	tflog.Debug(ctx, "updating service account oidc identity", map[string]interface{}{"identity": identity})
 
-	update, err := custom.NewClient(r.client).UpdateServiceAccountOIDCIdentity(identity)
+	_, err := custom.NewClient(r.client).UpdateServiceAccountOIDCIdentity(identity)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to create service account oidc identity", err)...); res.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Debug(ctx, "updated service account oidc identity", map[string]interface{}{"response": update})
+	tflog.Debug(ctx, "updated service account oidc identity", map[string]interface{}{"identity": identity})
 
 	plan = ServiceAccountOIDCIdentityResourceModel{
-		ID:               types.StringValue(update.ID),
+		ID:               types.StringValue(plan.ID.ValueString()),
 		ServiceAccountID: types.StringValue(plan.ServiceAccountID.ValueString()),
 		Name:             types.StringValue(plan.Name.ValueString()),
 		Issuer:           types.StringValue(plan.Issuer.ValueString()),
@@ -202,11 +204,13 @@ func (r *ServiceAccountOIDCIdentityResource) Delete(ctx context.Context, req res
 		"service_account_id": serviceAccountID,
 	})
 
-	err := custom.NewClient(r.client).DeleteServiceAccountOIDCIdentity(serviceAccountID, identityID)
-	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to delete service account oidc identity", err)...); res.Diagnostics.HasError() {
+	_, err := custom.NewClient(r.client).DeleteServiceAccountOIDCIdentity(serviceAccountID, identityID)
+	if !isAPIErrorNotFound(err) {
+		res.Diagnostics.Append(ErrAsDiagnostic("Failed to delete service account oidc identity", err)...)
 		return
 	}
 
+	res.State.RemoveResource(ctx)
 	tflog.Debug(ctx, "deleted service account oidc identity")
 }
 

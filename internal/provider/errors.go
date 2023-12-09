@@ -62,14 +62,18 @@ func ErrUnexpectedResourceConfigureType(input any) diag.Diagnostic {
 	)
 }
 
-func isAPIErrorNotFound(err error) bool {
+func isAPIStatusCode(err error, statusCode int) bool {
 	if apiErr, ok := err.(*core.APIError); ok {
-		if apiErr.StatusCode == http.StatusNotFound {
+		if apiErr.StatusCode == statusCode {
 			return true
 		}
 	}
 
 	return false
+}
+
+func isAPIErrorNotFound(err error) bool {
+	return isAPIStatusCode(err, http.StatusNotFound)
 }
 
 func ErrAsDiagnostic(message string, err error) (diags []diag.Diagnostic) {
