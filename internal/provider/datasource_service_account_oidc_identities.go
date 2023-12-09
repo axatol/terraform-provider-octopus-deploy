@@ -147,8 +147,14 @@ func (d *ServiceAccountOIDCIdentities) Read(ctx context.Context, req datasource.
 		})
 	}
 
-	oidcIdentityType := req.Config.Schema.GetAttributes()["oidc_identities"].(schema.ListNestedAttribute).NestedObject.Type()
-	oidcIdentityList, diags := types.ListValueFrom(ctx, oidcIdentityType, oidcIdentities)
+	oidcIdentitySchema, ok := req.Config.Schema.GetAttributes()["oidc_identities"].(schema.ListNestedAttribute)
+	if !ok {
+		err := fmt.Errorf("found invalid schema type for oidc_identities")
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch service account oidc identities %s", id), err.Error())
+		return
+	}
+
+	oidcIdentityList, diags := types.ListValueFrom(ctx, oidcIdentitySchema.NestedObject.Type(), oidcIdentities)
 	if res.Diagnostics.Append(diags...); res.Diagnostics.HasError() {
 		return
 	}
@@ -157,8 +163,8 @@ func (d *ServiceAccountOIDCIdentities) Read(ctx context.Context, req datasource.
 		ServiceAccountID: types.StringValue(id),
 		ExternalID:       types.StringValue(identities.ExternalID),
 		OIDCIdentities:   oidcIdentityList,
-		Skip:             types.Int64Value(int64(skip)),
-		Take:             types.Int64Value(int64(take)),
+		Skip:             types.Int64Value(skip),
+		Take:             types.Int64Value(take),
 	}
 
 	if res.Diagnostics.Append(res.State.Set(ctx, &model)...); res.Diagnostics.HasError() {
