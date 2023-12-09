@@ -3,12 +3,12 @@
 page_title: "octopusdeploycontrib_environment Data Source - terraform-provider-octopusdeploycontrib"
 subcategory: ""
 description: |-
-  
+  Use this data source to get the ID of an environment
 ---
 
 # octopusdeploycontrib_environment (Data Source)
 
-
+Use this data source to get the ID of an environment
 
 ## Example Usage
 

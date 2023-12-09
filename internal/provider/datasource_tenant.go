@@ -63,6 +63,7 @@ func (d *TenantDataSource) ConfigValidators(context.Context) []datasource.Config
 
 func (d *TenantDataSource) Schema(ctx context.Context, req datasource.SchemaRequest, res *datasource.SchemaResponse) {
 	res.Schema = schema.Schema{
+		MarkdownDescription: "Use this data source to get the ID of a tenant",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of the tenant",

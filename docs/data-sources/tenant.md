@@ -3,12 +3,12 @@
 page_title: "octopusdeploycontrib_tenant Data Source - terraform-provider-octopusdeploycontrib"
 subcategory: ""
 description: |-
-  
+  Use this data source to get the ID of a tenant
 ---
 
 # octopusdeploycontrib_tenant (Data Source)
 
-
+Use this data source to get the ID of a tenant
 
 ## Example Usage
 

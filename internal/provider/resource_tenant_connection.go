@@ -44,6 +44,7 @@ func (r *TenantConnectionResource) Metadata(ctx context.Context, req resource.Me
 
 func (r *TenantConnectionResource) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
+		MarkdownDescription: "Use this resource to connect a project to a tenant and environments",
 		Attributes: map[string]schema.Attribute{
 			"tenant_id": schema.StringAttribute{
 				MarkdownDescription: "ID of the tenant to connect to",
@@ -130,36 +131,25 @@ func (r *TenantConnectionResource) Read(ctx context.Context, req resource.ReadRe
 	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": tenantID})
 
 	tenant, err := r.client.Tenants.GetByIdentifier(tenantID)
-	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get tenant", err)...); res.Diagnostics.HasError() {
-		if isAPIErrorNotFound(err) {
-			res.State.RemoveResource(ctx)
-		}
+	if isAPIErrorNotFound(err) {
+		res.State.RemoveResource(ctx)
+		return
+	}
 
+	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get tenant", err)...); res.Diagnostics.HasError() {
 		return
 	}
 
 	tflog.Debug(ctx, "fetched tenant", map[string]interface{}{"tenant": tenant})
 
-	var environmentIDs []string
-	for k, v := range tenant.ProjectEnvironments {
-		if k == projectID {
-			environmentIDs = v
-			break
-		}
-	}
-
-	if len(environmentIDs) < 1 {
+	environmentIDs, ok := tenant.ProjectEnvironments[projectID]
+	if !ok {
 		res.State.RemoveResource(ctx)
 		return
 	}
 
 	slices.Sort(environmentIDs)
-	environmentIDValues := make([]attr.Value, len(environmentIDs))
-	for i, id := range environmentIDs {
-		environmentIDValues[i] = types.StringValue(id)
-	}
-
-	environmentIDList, diags := types.ListValue(types.StringType, environmentIDValues)
+	environmentIDList, diags := types.ListValueFrom(ctx, types.StringType, environmentIDs)
 	if res.Diagnostics.Append(diags...); res.Diagnostics.HasError() {
 		return
 	}
@@ -227,11 +217,12 @@ func (r *TenantConnectionResource) Delete(ctx context.Context, req resource.Dele
 	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": tenantID})
 
 	tenant, err := r.client.Tenants.GetByIdentifier(tenantID)
-	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get tenant", err)...); res.Diagnostics.HasError() {
-		if isAPIErrorNotFound(err) {
-			res.State.RemoveResource(ctx)
-		}
+	if isAPIErrorNotFound(err) {
+		res.State.RemoveResource(ctx)
+		return
+	}
 
+	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get tenant", err)...); res.Diagnostics.HasError() {
 		return
 	}
 
