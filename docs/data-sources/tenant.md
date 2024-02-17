@@ -13,12 +13,17 @@ Use this data source to get the ID of a tenant
 ## Example Usage
 
 ```terraform
-data "octopusdeploycontrib_tenant" "petclinic" {
-  name = "Abu Dhabi Vet"
+data "octopusdeploycontrib_tenant" "by_name" {
+  name = "Brisbane Vet"
 }
 
-data "octopusdeploycontrib_tenant" "octopus_deploy" {
-  id = "Tenants-616"
+data "octopusdeploycontrib_tenant" "by_id" {
+  id = "Tenants-381"
+}
+
+data "octopusdeploycontrib_tenant" "by_space_and_name" {
+  space_id = "Spaces-142"
+  name     = "Internal"
 }
 ```
 
@@ -29,3 +34,4 @@ data "octopusdeploycontrib_tenant" "octopus_deploy" {
 
 - `id` (String) ID of the tenant
 - `name` (String) Name of the tenant
+- `space_id` (String) ID of the space

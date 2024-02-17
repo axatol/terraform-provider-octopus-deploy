@@ -13,12 +13,17 @@ Use this data source to get the ID of a project
 ## Example Usage
 
 ```terraform
-data "octopusdeploycontrib_project" "petclinic" {
+data "octopusdeploycontrib_project" "by_name" {
   name = "PetClinic"
 }
 
-data "octopusdeploycontrib_project" "octopus_deploy" {
-  id = "Projects-1241"
+data "octopusdeploycontrib_project" "by_id" {
+  id = "Projects-861"
+}
+
+data "octopusdeploycontrib_project" "by_space_and_name" {
+  space_id = "Spaces-142"
+  name     = "Instance Infrastructure"
 }
 ```
 
@@ -29,6 +34,7 @@ data "octopusdeploycontrib_project" "octopus_deploy" {
 
 - `id` (String) ID of the project
 - `name` (String) The name of the project in Octopus Deploy. This name must be unique
+- `space_id` (String) The ID of the space that the project belongs to
 
 ### Read-Only
 

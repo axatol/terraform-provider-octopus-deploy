@@ -53,3 +53,4 @@ resource "octopusdeploycontrib_tenant_connection" "test" {
 ### Optional
 
 - `environment_ids` (List of String) list of applicable environments to connect
+- `space_id` (String) ID of the space to connect to

@@ -35,17 +35,7 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-
-  generate:
-    runs-on: self-hosted
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          show-progress: false
-      - uses: actions/setup-go@v4
-        with:
-          go-version-file: "go.mod"
-          cache: false
+          skip-cache: true
       - uses: hashicorp/setup-terraform@v2
         with:
           terraform_wrapper: false

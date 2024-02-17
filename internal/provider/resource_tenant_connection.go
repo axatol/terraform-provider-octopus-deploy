@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/client"
+	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/tenants"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -33,6 +34,7 @@ type TenantConnectionResource struct {
 
 // TenantConnectionResourceModel describes the resource data model.
 type TenantConnectionResourceModel struct {
+	SpaceID        types.String `tfsdk:"space_id"`
 	TenantID       types.String `tfsdk:"tenant_id"`
 	ProjectID      types.String `tfsdk:"project_id"`
 	EnvironmentIDs types.List   `tfsdk:"environment_ids"`
@@ -46,6 +48,12 @@ func (r *TenantConnectionResource) Schema(ctx context.Context, req resource.Sche
 	res.Schema = schema.Schema{
 		MarkdownDescription: "Use this resource to connect a project to a tenant and environments",
 		Attributes: map[string]schema.Attribute{
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "ID of the space to connect to",
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+			},
 			"tenant_id": schema.StringAttribute{
 				MarkdownDescription: "ID of the tenant to connect to",
 				Required:            true,
@@ -85,6 +93,7 @@ func (r *TenantConnectionResource) Create(ctx context.Context, req resource.Crea
 		return
 	}
 
+	spaceID := plan.SpaceID.ValueString()
 	tenantID := plan.TenantID.ValueString()
 	projectID := plan.ProjectID.ValueString()
 	environmentIDVals := make([]types.String, 0, len(plan.EnvironmentIDs.Elements()))
@@ -99,15 +108,22 @@ func (r *TenantConnectionResource) Create(ctx context.Context, req resource.Crea
 
 	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": tenantID})
 
-	tenant, err := r.client.Tenants.GetByID(tenantID)
+	tenantsQuery, err := tenants.Get(r.client, spaceID, tenants.TenantsQuery{IDs: []string{tenantID}})
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get tenant", err)...); res.Diagnostics.HasError() {
 		return
 	}
 
+	if len(tenantsQuery.Items) < 1 {
+		res.Diagnostics.AddError("Failed to fetch tenant", "tenant not found")
+		return
+	}
+
+	tenant := tenantsQuery.Items[0]
+
 	tflog.Debug(ctx, "fetched tenant, updating project environments", map[string]interface{}{"tenant": tenant})
 
 	tenant.ProjectEnvironments[projectID] = environmentIDs
-	_, err = r.client.Tenants.Update(tenant)
+	_, err = tenants.Update(r.client, tenant)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to update tenant", err)...); res.Diagnostics.HasError() {
 		return
 	}
@@ -125,12 +141,13 @@ func (r *TenantConnectionResource) Read(ctx context.Context, req resource.ReadRe
 		return
 	}
 
+	spaceID := state.SpaceID.ValueString()
 	tenantID := state.TenantID.ValueString()
 	projectID := state.ProjectID.ValueString()
 
 	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": tenantID})
 
-	tenant, err := r.client.Tenants.GetByIdentifier(tenantID)
+	tenant, err := tenants.GetByID(r.client, spaceID, tenantID)
 	if isAPIErrorNotFound(err) {
 		res.State.RemoveResource(ctx)
 		return
@@ -171,6 +188,7 @@ func (r *TenantConnectionResource) Update(ctx context.Context, req resource.Upda
 		return
 	}
 
+	spaceID := plan.SpaceID.ValueString()
 	tenantID := plan.TenantID.ValueString()
 	projectID := plan.ProjectID.ValueString()
 	environmentIDVals := make([]types.String, 0, len(plan.EnvironmentIDs.Elements()))
@@ -185,7 +203,7 @@ func (r *TenantConnectionResource) Update(ctx context.Context, req resource.Upda
 
 	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": tenantID})
 
-	tenant, err := r.client.Tenants.GetByID(tenantID)
+	tenant, err := tenants.GetByID(r.client, spaceID, tenantID)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get tenant", err)...); res.Diagnostics.HasError() {
 		return
 	}
@@ -193,7 +211,7 @@ func (r *TenantConnectionResource) Update(ctx context.Context, req resource.Upda
 	tflog.Debug(ctx, "fetched tenant, updating project environments", map[string]interface{}{"tenant": tenant})
 
 	tenant.ProjectEnvironments[projectID] = environmentIDs
-	_, err = r.client.Tenants.Update(tenant)
+	_, err = tenants.Update(r.client, tenant)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to update tenant", err)...); res.Diagnostics.HasError() {
 		return
 	}
@@ -211,12 +229,13 @@ func (r *TenantConnectionResource) Delete(ctx context.Context, req resource.Dele
 		return
 	}
 
+	spaceID := state.SpaceID.ValueString()
 	tenantID := state.TenantID.ValueString()
 	projectID := state.ProjectID.ValueString()
 
 	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": tenantID})
 
-	tenant, err := r.client.Tenants.GetByIdentifier(tenantID)
+	tenant, err := tenants.GetByID(r.client, spaceID, tenantID)
 	if isAPIErrorNotFound(err) {
 		res.State.RemoveResource(ctx)
 		return
@@ -229,7 +248,7 @@ func (r *TenantConnectionResource) Delete(ctx context.Context, req resource.Dele
 	tflog.Debug(ctx, "fetched tenant, updating project environments", map[string]interface{}{"tenant": tenant})
 
 	delete(tenant.ProjectEnvironments, projectID)
-	_, err = r.client.Tenants.Update(tenant)
+	_, err = tenants.Update(r.client, tenant)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to update tenant", err)...); res.Diagnostics.HasError() {
 		return
 	}
