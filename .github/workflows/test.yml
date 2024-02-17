@@ -7,7 +7,6 @@ on:
   workflow_call:
   push:
     branches-ignore:
-      - main
       - "v*"
     paths-ignore:
       - "**/*.md"
@@ -27,7 +26,7 @@ jobs:
           show-progress: false
       - uses: actions/setup-go@v4
         with:
-          go-version-file: "go.mod"
+          go-version-file: go.mod
           cache: false
       - run: go mod download
       - run: go build -v .
