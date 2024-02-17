@@ -13,12 +13,17 @@ Use this data source to get the ID of an environment
 ## Example Usage
 
 ```terraform
-data "octopusdeploycontrib_environment" "petclinic" {
+data "octopusdeploycontrib_environment" "by_name" {
   name = "Development"
 }
 
-data "octopusdeploycontrib_environment" "octopus_deploy" {
+data "octopusdeploycontrib_environment" "by_id" {
   id = "Environments-781"
+}
+
+data "octopusdeploycontrib_environment" "by_space_and_name" {
+  space_id = "Spaces-142"
+  name     = "SpinUp"
 }
 ```
 
@@ -29,3 +34,4 @@ data "octopusdeploycontrib_environment" "octopus_deploy" {
 
 - `id` (String) ID of the environment
 - `name` (String) Name of the environment
+- `space_id` (String) ID of the space

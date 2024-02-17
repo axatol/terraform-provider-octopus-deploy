@@ -46,7 +46,7 @@ func ErrUnexpectedDataSourceConfigureType(input any) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
 		"Unexpected data source configure type",
 		fmt.Sprintf(
-			"Expected *api.Client, got: %T. Please report this issue to the provider developers.",
+			"Expected OctopusDeployProviderData, got: %T. Please report this issue to the provider developers.",
 			input,
 		),
 	)
@@ -56,7 +56,7 @@ func ErrUnexpectedResourceConfigureType(input any) diag.Diagnostic {
 	return diag.NewErrorDiagnostic(
 		"Unexpected resource configure type",
 		fmt.Sprintf(
-			"Expected *api.Client, got: %T. Please report this issue to the provider developers.",
+			"Expected OctopusDeployProviderData, got: %T. Please report this issue to the provider developers.",
 			input,
 		),
 	)

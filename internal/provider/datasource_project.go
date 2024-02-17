@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/client"
+	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/projects"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -31,9 +32,10 @@ type ProjectDataSource struct {
 
 // ProjectDataSourceModel describes the data source data model.
 type ProjectDataSourceModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
-	Slug types.String `tfsdk:"slug"`
+	SpaceID types.String `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	Name    types.String `tfsdk:"name"`
+	Slug    types.String `tfsdk:"slug"`
 }
 
 func (d *ProjectDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, res *datasource.MetadataResponse) {
@@ -66,6 +68,11 @@ func (d *ProjectDataSource) Schema(ctx context.Context, req datasource.SchemaReq
 	res.Schema = schema.Schema{
 		MarkdownDescription: "Use this data source to get the ID of a project",
 		Attributes: map[string]schema.Attribute{
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "The ID of the space that the project belongs to",
+				Computed:            true,
+				Optional:            true,
+			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of the project",
 				Computed:            true,
@@ -90,31 +97,42 @@ func (d *ProjectDataSource) Read(ctx context.Context, req datasource.ReadRequest
 		return
 	}
 
+	spaceID := data.SpaceID.ValueString()
+	name := data.Name.ValueString()
 	id := data.ID.ValueString()
-	if id == "" {
-		id = data.Name.ValueString()
+	query := projects.ProjectsQuery{
+		Name: name,
+		IDs:  []string{id},
+		Skip: 0,
+		Take: 1,
 	}
 
-	tflog.Debug(ctx, "fetching project", map[string]interface{}{"id": id})
-
-	if id == "" {
-		err := fmt.Errorf("did not provide a valid identifier")
-		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch project %s", id), err.Error())
-		return
+	identifier := id
+	if name != "" {
+		identifier = name
 	}
 
-	project, err := d.client.Projects.GetByIdentifier(id)
+	tflog.Debug(ctx, "fetched project", map[string]interface{}{"project_identifier": identifier, "space_id": spaceID})
+
+	resources, err := projects.Get(d.client, spaceID, query)
 	if err != nil {
-		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch project %s", id), err.Error())
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch project %s", identifier), err.Error())
 		return
 	}
 
-	tflog.Debug(ctx, "fetched project", map[string]interface{}{"project": project})
+	if len(resources.Items) < 1 {
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch project %s", identifier), "project not found")
+		return
+	}
+
+	resource := resources.Items[0]
+
+	tflog.Debug(ctx, "fetched project", map[string]interface{}{"project": resource})
 
 	model := ProjectDataSourceModel{
-		ID:   types.StringValue(project.ID),
-		Name: types.StringValue(project.Name),
-		Slug: types.StringValue(project.Slug),
+		SpaceID: types.StringValue(resource.SpaceID),
+		ID:      types.StringValue(resource.ID),
+		Name:    types.StringValue(resource.Name),
 	}
 
 	if res.Diagnostics.Append(res.State.Set(ctx, &model)...); res.Diagnostics.HasError() {

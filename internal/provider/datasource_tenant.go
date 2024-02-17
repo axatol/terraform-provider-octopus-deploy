@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/client"
+	"github.com/OctopusDeploy/go-octopusdeploy/v2/pkg/tenants"
 	"github.com/hashicorp/terraform-plugin-framework-validators/datasourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -31,8 +32,9 @@ type TenantDataSource struct {
 
 // TenantDataSourceModel describes the data source data model.
 type TenantDataSourceModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
+	SpaceID types.String `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	Name    types.String `tfsdk:"name"`
 }
 
 func (d *TenantDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, res *datasource.MetadataResponse) {
@@ -65,6 +67,11 @@ func (d *TenantDataSource) Schema(ctx context.Context, req datasource.SchemaRequ
 	res.Schema = schema.Schema{
 		MarkdownDescription: "Use this data source to get the ID of a tenant",
 		Attributes: map[string]schema.Attribute{
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "ID of the space",
+				Computed:            true,
+				Optional:            true,
+			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of the tenant",
 				Computed:            true,
@@ -85,30 +92,42 @@ func (d *TenantDataSource) Read(ctx context.Context, req datasource.ReadRequest,
 		return
 	}
 
+	spaceID := data.SpaceID.ValueString()
+	name := data.Name.ValueString()
 	id := data.ID.ValueString()
-	if id == "" {
-		id = data.Name.ValueString()
+	query := tenants.TenantsQuery{
+		Name: name,
+		IDs:  []string{id},
+		Skip: 0,
+		Take: 1,
 	}
 
-	tflog.Debug(ctx, "fetching tenant", map[string]interface{}{"id": id})
-
-	if id == "" {
-		err := fmt.Errorf("did not provide a valid identifier")
-		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch tenant %s", id), err.Error())
-		return
+	identifier := id
+	if name != "" {
+		identifier = name
 	}
 
-	tenant, err := d.client.Tenants.GetByIdentifier(id)
+	tflog.Debug(ctx, "fetched tenant", map[string]interface{}{"tenant_identifier": identifier, "space_id": spaceID})
+
+	tenants, err := tenants.Get(d.client, spaceID, query)
 	if err != nil {
-		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch tenant %s", id), err.Error())
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch tenant %s", identifier), err.Error())
 		return
 	}
+
+	if len(tenants.Items) < 1 {
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch tenant %s", identifier), "tenant not found")
+		return
+	}
+
+	tenant := tenants.Items[0]
 
 	tflog.Debug(ctx, "fetched tenant", map[string]interface{}{"tenant": tenant})
 
 	model := TenantDataSourceModel{
-		ID:   types.StringValue(tenant.ID),
-		Name: types.StringValue(tenant.Name),
+		SpaceID: types.StringValue(tenant.SpaceID),
+		ID:      types.StringValue(tenant.ID),
+		Name:    types.StringValue(tenant.Name),
 	}
 
 	if res.Diagnostics.Append(res.State.Set(ctx, &model)...); res.Diagnostics.HasError() {

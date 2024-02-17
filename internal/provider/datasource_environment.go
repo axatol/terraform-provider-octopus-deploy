@@ -32,8 +32,9 @@ type EnvironmentDataSource struct {
 
 // EnvironmentDataSourceModel describes the data source data model.
 type EnvironmentDataSourceModel struct {
-	ID   types.String `tfsdk:"id"`
-	Name types.String `tfsdk:"name"`
+	SpaceID types.String `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	Name    types.String `tfsdk:"name"`
 }
 
 func (d *EnvironmentDataSource) Metadata(ctx context.Context, req datasource.MetadataRequest, res *datasource.MetadataResponse) {
@@ -66,6 +67,11 @@ func (d *EnvironmentDataSource) Schema(ctx context.Context, req datasource.Schem
 	res.Schema = schema.Schema{
 		MarkdownDescription: "Use this data source to get the ID of an environment",
 		Attributes: map[string]schema.Attribute{
+			"space_id": schema.StringAttribute{
+				MarkdownDescription: "ID of the space",
+				Computed:            true,
+				Optional:            true,
+			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: "ID of the environment",
 				Computed:            true,
@@ -86,40 +92,42 @@ func (d *EnvironmentDataSource) Read(ctx context.Context, req datasource.ReadReq
 		return
 	}
 
-	var (
-		environment *environments.Environment
-		err         error
-	)
-
-	id := data.ID.ValueString()
+	spaceID := data.SpaceID.ValueString()
 	name := data.Name.ValueString()
-
-	tflog.Debug(ctx, "fetching environment", map[string]interface{}{"id": id, "name": name})
-
-	if id != "" {
-		environment, err = d.client.Environments.GetByID(id)
-	} else if name != "" {
-		var environments []*environments.Environment
-		environments, err = d.client.Environments.GetByName(name)
-		for _, env := range environments {
-			if env.Name == name {
-				environment = env
-			}
-		}
-	} else {
-		err = fmt.Errorf("did not provide a valid identifier")
+	id := data.ID.ValueString()
+	query := environments.EnvironmentsQuery{
+		Name: name,
+		IDs:  []string{id},
+		Skip: 0,
+		Take: 1,
 	}
 
+	identifier := id
+	if name != "" {
+		identifier = name
+	}
+
+	tflog.Debug(ctx, "fetched environment", map[string]interface{}{"environment_identifier": identifier, "space_id": spaceID})
+
+	resources, err := environments.Get(d.client, spaceID, query)
 	if err != nil {
-		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch environment %s", id), err.Error())
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch environment %s", identifier), err.Error())
 		return
 	}
 
-	tflog.Debug(ctx, "fetched environment", map[string]interface{}{"environment": environment})
+	if len(resources.Items) < 1 {
+		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch environment %s", identifier), "environment not found")
+		return
+	}
+
+	resource := resources.Items[0]
+
+	tflog.Debug(ctx, "fetched environment", map[string]interface{}{"environment": resource})
 
 	model := EnvironmentDataSourceModel{
-		ID:   types.StringValue(environment.ID),
-		Name: types.StringValue(environment.Name),
+		SpaceID: types.StringValue(resource.SpaceID),
+		ID:      types.StringValue(resource.ID),
+		Name:    types.StringValue(resource.Name),
 	}
 
 	if res.Diagnostics.Append(res.State.Set(ctx, &model)...); res.Diagnostics.HasError() {

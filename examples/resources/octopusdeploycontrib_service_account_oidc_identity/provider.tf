@@ -7,6 +7,4 @@ terraform {
 }
 
 provider "octopusdeploycontrib" {
-  server_url = "https://octopus.k8s.axatol.xyz"
-  space_id   = "Spaces-1"
 }
