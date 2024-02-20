@@ -1,6 +1,7 @@
 package custom
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
@@ -35,33 +36,33 @@ type UpdateServiceAccountOIDCIdentityResponse struct{}
 
 type DeleteServiceAccountOIDCIdentityResponse struct{}
 
-func (c *Client) ListServiceAccountOIDCIdentites(serviceAccountID string, skip, take int) (res ListServiceAccountOIDCIdentitesResponse, err error) {
+func (c *Client) ListServiceAccountOIDCIdentites(ctx context.Context, serviceAccountID string, skip, take int) (res ListServiceAccountOIDCIdentitesResponse, err error) {
 	query := url.Values{"skip": {fmt.Sprint(skip)}, "take": {fmt.Sprint(take)}}
 	endpoint := fmt.Sprintf("serviceaccounts/%s/oidcidentities/v1?%s", serviceAccountID, query.Encode())
-	err = c.do(c.client.Sling().New().Get(endpoint), &res)
+	err = c.do(ctx, c.client.Sling().New().Get(endpoint), &res)
 	return res, err
 }
 
-func (c *Client) GetServiceAccountOIDCIdentity(serviceAccountID, identityID string) (res GetServiceAccountOIDCIdentityResponse, err error) {
+func (c *Client) GetServiceAccountOIDCIdentity(ctx context.Context, serviceAccountID, identityID string) (res GetServiceAccountOIDCIdentityResponse, err error) {
 	endpoint := fmt.Sprintf("serviceaccounts/%s/oidcidentities/%s/v1", serviceAccountID, identityID)
-	err = c.do(c.client.Sling().New().Get(endpoint), &res)
+	err = c.do(ctx, c.client.Sling().New().Get(endpoint), &res)
 	return res, err
 }
 
-func (c *Client) CreateServiceAccountOIDCIdentity(identity OIDCIdentity) (res CreateServiceAccountOIDCIdentityResponse, err error) {
+func (c *Client) CreateServiceAccountOIDCIdentity(ctx context.Context, identity OIDCIdentity) (res CreateServiceAccountOIDCIdentityResponse, err error) {
 	endpoint := fmt.Sprintf("serviceaccounts/%s/oidcidentities/create/v1", identity.ServiceAccountID)
-	err = c.do(c.client.Sling().New().Post(endpoint).BodyJSON(identity), &res)
+	err = c.do(ctx, c.client.Sling().New().Post(endpoint).BodyJSON(identity), &res)
 	return res, err
 }
 
-func (c *Client) UpdateServiceAccountOIDCIdentity(identity OIDCIdentity) (res UpdateServiceAccountOIDCIdentityResponse, err error) {
+func (c *Client) UpdateServiceAccountOIDCIdentity(ctx context.Context, identity OIDCIdentity) (res UpdateServiceAccountOIDCIdentityResponse, err error) {
 	endpoint := fmt.Sprintf("serviceaccounts/%s/oidcidentities/%s/v1", identity.ServiceAccountID, *identity.ID)
-	err = c.do(c.client.Sling().New().Put(endpoint).BodyJSON(identity), &res)
+	err = c.do(ctx, c.client.Sling().New().Put(endpoint).BodyJSON(identity), &res)
 	return res, err
 }
 
-func (c *Client) DeleteServiceAccountOIDCIdentity(serviceAccountID, identityID string) (res DeleteServiceAccountOIDCIdentityResponse, err error) {
+func (c *Client) DeleteServiceAccountOIDCIdentity(ctx context.Context, serviceAccountID, identityID string) (res DeleteServiceAccountOIDCIdentityResponse, err error) {
 	endpoint := fmt.Sprintf("serviceaccounts/%s/oidcidentities/%s/v1", serviceAccountID, identityID)
-	err = c.do(c.client.Sling().New().Delete(endpoint), &res)
+	err = c.do(ctx, c.client.Sling().New().Delete(endpoint), &res)
 	return res, err
 }

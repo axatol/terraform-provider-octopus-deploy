@@ -129,7 +129,7 @@ func (d *ServiceAccountOIDCIdentities) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	identities, err := custom.NewClient(d.client).ListServiceAccountOIDCIdentites(id, int(skip), int(take))
+	identities, err := custom.NewClient(d.client).ListServiceAccountOIDCIdentites(ctx, id, int(skip), int(take))
 	if err != nil {
 		res.Diagnostics.AddError(fmt.Sprintf("Failed to fetch service account oidc identities %s", id), err.Error())
 		return
