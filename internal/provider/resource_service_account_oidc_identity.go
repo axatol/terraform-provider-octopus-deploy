@@ -102,7 +102,7 @@ func (r *ServiceAccountOIDCIdentityResource) Create(ctx context.Context, req res
 
 	tflog.Debug(ctx, "creating service account oidc identity", map[string]interface{}{"identity": identity})
 
-	create, err := custom.NewClient(r.client).CreateServiceAccountOIDCIdentity(identity)
+	create, err := custom.NewClient(r.client).CreateServiceAccountOIDCIdentity(ctx, identity)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to create service account oidc identity", err)...); res.Diagnostics.HasError() {
 		return
 	}
@@ -129,7 +129,7 @@ func (r *ServiceAccountOIDCIdentityResource) Read(ctx context.Context, req resou
 		"service_account_id": serviceAccountID,
 	})
 
-	identity, err := custom.NewClient(r.client).GetServiceAccountOIDCIdentity(serviceAccountID, identityID)
+	identity, err := custom.NewClient(r.client).GetServiceAccountOIDCIdentity(ctx, serviceAccountID, identityID)
 	if isAPIErrorNotFound(err) {
 		res.State.RemoveResource(ctx)
 		return
@@ -170,7 +170,7 @@ func (r *ServiceAccountOIDCIdentityResource) Update(ctx context.Context, req res
 
 	tflog.Debug(ctx, "updating service account oidc identity", map[string]interface{}{"identity": identity})
 
-	_, err := custom.NewClient(r.client).UpdateServiceAccountOIDCIdentity(identity)
+	_, err := custom.NewClient(r.client).UpdateServiceAccountOIDCIdentity(ctx, identity)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to create service account oidc identity", err)...); res.Diagnostics.HasError() {
 		return
 	}
@@ -204,7 +204,7 @@ func (r *ServiceAccountOIDCIdentityResource) Delete(ctx context.Context, req res
 		"service_account_id": serviceAccountID,
 	})
 
-	_, err := custom.NewClient(r.client).DeleteServiceAccountOIDCIdentity(serviceAccountID, identityID)
+	_, err := custom.NewClient(r.client).DeleteServiceAccountOIDCIdentity(ctx, serviceAccountID, identityID)
 	if !isAPIErrorNotFound(err) {
 		res.Diagnostics.Append(ErrAsDiagnostic("Failed to delete service account oidc identity", err)...)
 		return
@@ -232,7 +232,7 @@ func (r *ServiceAccountOIDCIdentityResource) ImportState(ctx context.Context, re
 		"service_account_id": serviceAccountID,
 	})
 
-	identity, err := custom.NewClient(r.client).GetServiceAccountOIDCIdentity(serviceAccountID, identityID)
+	identity, err := custom.NewClient(r.client).GetServiceAccountOIDCIdentity(ctx, serviceAccountID, identityID)
 	if res.Diagnostics.Append(ErrAsDiagnostic("Failed to get service account oidc identity", err)...); err != nil {
 		return
 	}
