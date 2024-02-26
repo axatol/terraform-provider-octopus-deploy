@@ -14,10 +14,10 @@ Use this resource to create and manage OIDC subject claims on a service account
 
 ```terraform
 resource "octopusdeploycontrib_service_account_oidc_identity" "github" {
-  service_account_id = "Users-41"
-  name               = "GitHub"
-  issuer             = "https://token.actions.githubusercontent.com"
-  subject            = "repo:axatol/terraform-provider-octopusdeploycontrib:pull_request"
+  user_id = "Users-41"
+  name    = "GitHub"
+  issuer  = "https://token.actions.githubusercontent.com"
+  subject = "repo:axatol/terraform-provider-octopusdeploycontrib:pull_request"
 }
 ```
 
@@ -28,9 +28,10 @@ resource "octopusdeploycontrib_service_account_oidc_identity" "github" {
 
 - `issuer` (String) OIDC issuer url
 - `name` (String) Name of the identity
-- `service_account_id` (String) ID of the service account to associate this identity to
 - `subject` (String) OIDC subject claims
+- `user_id` (String) ID of the service account to associate this identity to
 
 ### Read-Only
 
+- `external_id` (String) The ID to use as the audience when attempting to authenticate with this identity
 - `id` (String) ID of the service account OIDC identity

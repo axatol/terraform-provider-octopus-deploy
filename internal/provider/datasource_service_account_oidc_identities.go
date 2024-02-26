@@ -37,11 +37,11 @@ type ServiceAccountOIDCIdentityModel struct {
 
 // ServiceAccountOIDCIdentitiesModel describes the data source data model.
 type ServiceAccountOIDCIdentitiesModel struct {
-	ServiceAccountID types.String `tfsdk:"service_account_id"`
-	ExternalID       types.String `tfsdk:"external_id"`
-	OIDCIdentities   types.List   `tfsdk:"oidc_identities"`
-	Skip             types.Int64  `tfsdk:"skip"`
-	Take             types.Int64  `tfsdk:"take"`
+	UserID         types.String `tfsdk:"user_id"`
+	ExternalID     types.String `tfsdk:"external_id"`
+	OIDCIdentities types.List   `tfsdk:"oidc_identities"`
+	Skip           types.Int64  `tfsdk:"skip"`
+	Take           types.Int64  `tfsdk:"take"`
 }
 
 func (d *ServiceAccountOIDCIdentities) Metadata(ctx context.Context, req datasource.MetadataRequest, res *datasource.MetadataResponse) {
@@ -67,7 +67,7 @@ func (d *ServiceAccountOIDCIdentities) Schema(ctx context.Context, req datasourc
 	res.Schema = schema.Schema{
 		MarkdownDescription: "Use this data source to get the audience used to authenticate with this service account and the possible matching OIDC identity subjects",
 		Attributes: map[string]schema.Attribute{
-			"service_account_id": schema.StringAttribute{
+			"user_id": schema.StringAttribute{
 				MarkdownDescription: "ID of the service account",
 				Required:            true,
 			},
@@ -104,7 +104,7 @@ func (d *ServiceAccountOIDCIdentities) Schema(ctx context.Context, req datasourc
 				Required:            true,
 			},
 			"take": schema.Int64Attribute{
-				MarkdownDescription: "Number of items to takd",
+				MarkdownDescription: "Number of items to take",
 				Required:            true,
 			},
 		},
@@ -117,7 +117,7 @@ func (d *ServiceAccountOIDCIdentities) Read(ctx context.Context, req datasource.
 		return
 	}
 
-	id := data.ServiceAccountID.ValueString()
+	id := data.UserID.ValueString()
 	skip := data.Skip.ValueInt64()
 	take := data.Take.ValueInt64()
 
@@ -138,12 +138,12 @@ func (d *ServiceAccountOIDCIdentities) Read(ctx context.Context, req datasource.
 	tflog.Debug(ctx, "fetched service account oidc identities", map[string]interface{}{"identities": identities})
 
 	oidcIdentities := []ServiceAccountOIDCIdentityModel{}
-	for _, id := range identities.OIDCIdentities {
+	for _, identity := range identities.OIDCIdentities {
 		oidcIdentities = append(oidcIdentities, ServiceAccountOIDCIdentityModel{
-			ID:      types.StringValue(*id.ID),
-			Name:    types.StringValue(id.Name),
-			Issuer:  types.StringValue(id.Issuer),
-			Subject: types.StringValue(id.Subject),
+			ID:      types.StringValue(*identity.ID),
+			Name:    types.StringValue(identity.Name),
+			Issuer:  types.StringValue(identity.Issuer),
+			Subject: types.StringValue(identity.Subject),
 		})
 	}
 
@@ -160,11 +160,11 @@ func (d *ServiceAccountOIDCIdentities) Read(ctx context.Context, req datasource.
 	}
 
 	model := ServiceAccountOIDCIdentitiesModel{
-		ServiceAccountID: types.StringValue(id),
-		ExternalID:       types.StringValue(identities.ExternalID),
-		OIDCIdentities:   oidcIdentityList,
-		Skip:             types.Int64Value(skip),
-		Take:             types.Int64Value(take),
+		UserID:         types.StringValue(id),
+		ExternalID:     types.StringValue(identities.ExternalID),
+		OIDCIdentities: oidcIdentityList,
+		Skip:           types.Int64Value(skip),
+		Take:           types.Int64Value(take),
 	}
 
 	if res.Diagnostics.Append(res.State.Set(ctx, &model)...); res.Diagnostics.HasError() {
