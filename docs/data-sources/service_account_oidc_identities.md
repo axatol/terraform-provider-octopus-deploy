@@ -14,9 +14,9 @@ Use this data source to get the audience used to authenticate with this service 
 
 ```terraform
 data "octopusdeploycontrib_service_account_oidc_identities" "github" {
-  service_account_id = "Users-41"
-  skip               = 0
-  take               = 5
+  user_id = "Users-21"
+  skip    = 0
+  take    = 5
 }
 
 resource "terraform_data" "github" {
@@ -29,9 +29,9 @@ resource "terraform_data" "github" {
 
 ### Required
 
-- `service_account_id` (String) ID of the service account
 - `skip` (Number) Number of items to skip
-- `take` (Number) Number of items to takd
+- `take` (Number) Number of items to take
+- `user_id` (String) ID of the service account
 
 ### Read-Only
 
